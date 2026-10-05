@@ -6,3 +6,4 @@ COPY tools/init.sh /usr/local/bin/init.sh
 RUN chmod +x /usr/local/bin/init.sh && rm -f /etc/nginx/sites-enabled/default
 EXPOSE 443
 ENTRYPOINT ["/usr/local/bin/init.sh"]
+RUN sed -i 's/^[[:space:]]*ssl_protocols.*/\tssl_protocols TLSv1.2 TLSv1.3;/' /etc/nginx/nginx.conf
