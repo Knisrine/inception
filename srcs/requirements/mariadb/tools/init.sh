@@ -1,5 +1,7 @@
 #!/bin/bash
 set -e
+MYSQL_PASSWORD=$(cat /run/secrets/db_password)
+MYSQL_ROOT_PASSWORD=$(cat /run/secrets/db_root_password)
 chown -R mysql:mysql /var/lib/mysql
 if [ ! -d "/var/lib/mysql/${MYSQL_DATABASE}" ]; then
     mysql_install_db --user=mysql --datadir=/var/lib/mysql > /dev/null
