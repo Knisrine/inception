@@ -1,0 +1,64 @@
+services:
+  wordpress:
+    environment:
+      WP_REDIS_ENABLED: "1"
+    depends_on:
+      - redis
+
+  nginx:
+    depends_on:
+      - adminer
+      - static
+
+  redis:
+    build: requirements/bonus/redis
+    image: redis:inception
+    container_name: redis
+    networks:
+      - inception
+    restart: always
+
+  adminer:
+    build: requirements/bonus/adminer
+    image: adminer:inception
+    container_name: adminer
+    depends_on:
+      - mariadb
+    networks:
+      - inception
+    restart: always
+
+  static:
+    build: requirements/bonus/static
+    image: static:inception
+    container_name: static
+    networks:
+      - inception
+    restart: always
+
+  backup:
+    build: requirements/bonus/backup
+    image: backup:inception
+    container_name: backup
+    env_file: .env
+    secrets:
+      - db_password
+    depends_on:
+      - mariadb
+    volumes:
+      - backup_data:/backups
+    networks:
+      - inception
+    restart: always
+
+secrets:
+  db_password:
+    file: ../secrets/db_password.txt
+
+volumes:
+  backup_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH}/backups
