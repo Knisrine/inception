@@ -24,6 +24,7 @@ services:
       - wp_user_password
     depends_on:
       - mariadb
+      - redis
     volumes:
       - wordpress_data:/var/www/html
     networks:
@@ -37,10 +38,53 @@ services:
     env_file: .env
     depends_on:
       - wordpress
+      - adminer
+      - static
     ports:
       - "443:443"
     volumes:
       - wordpress_data:/var/www/html:ro
+    networks:
+      - inception
+    restart: always
+
+  redis:
+    build: requirements/bonus/redis
+    image: redis:inception
+    container_name: redis
+    networks:
+      - inception
+    restart: always
+
+  adminer:
+    build: requirements/bonus/adminer
+    image: adminer:inception
+    container_name: adminer
+    depends_on:
+      - mariadb
+    networks:
+      - inception
+    restart: always
+
+  static:
+    build: requirements/bonus/static
+    image: static:inception
+    container_name: static
+    networks:
+      - inception
+    restart: always
+
+  backup:
+    build: requirements/bonus/backup
+    image: backup:inception
+    container_name: backup
+    env_file: .env
+    secrets:
+      - db_password
+    depends_on:
+      - mariadb
+    volumes:
+      - backup_data:/backups
     networks:
       - inception
     restart: always
@@ -68,6 +112,12 @@ volumes:
       type: none
       o: bind
       device: ${DATA_PATH}/wordpress
+  backup_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH}/backups
 
 networks:
   inception:

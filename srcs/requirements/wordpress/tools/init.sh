@@ -17,5 +17,11 @@ if [ ! -f wp-config.php ]; then
     wp user create "$WP_USER" "$WP_USER_EMAIL" --allow-root \
         --user_pass="$WP_USER_PASSWORD" --role=author
 fi
+if ! wp plugin is-installed redis-cache --allow-root; then
+    wp plugin install redis-cache --activate --allow-root
+fi
+wp config set WP_REDIS_HOST redis --allow-root
+wp config set WP_REDIS_PORT 6379 --raw --allow-root
+wp redis enable --allow-root || true
 chown -R www-data:www-data /var/www/html
 exec php-fpm8.2 -F

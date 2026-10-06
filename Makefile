@@ -4,7 +4,7 @@ DATA = /home/$(USER)/data
 all: up
 
 up:
-	mkdir -p $(DATA)/mariadb $(DATA)/wordpress
+	mkdir -p $(DATA)/mariadb $(DATA)/wordpress $(DATA)/backups
 	$(COMPOSE) up -d --build
 
 down:
@@ -14,7 +14,7 @@ clean:
 	$(COMPOSE) down --rmi all -v
 
 fclean: clean
-	sudo rm -rf $(DATA)/mariadb $(DATA)/wordpress
+	sudo rm -rf $(DATA)/mariadb $(DATA)/wordpress $(DATA)/backups
 
 re: fclean all
 
