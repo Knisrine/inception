@@ -47,3 +47,30 @@ docker compose -f srcs/docker-compose.yml exec mariadb mariadb-admin ping
 ```
 
 All expected containers should be running, and the MariaDB ping should report that the server is alive.
+
+## Administration panel
+
+The WordPress administration panel is at `https://nikhtib.42.fr/wp-admin`.
+
+| Account | Role | Password file |
+|---|---|---|
+| `nikhtib` | Administrator | `secrets/wp_admin_password.txt` |
+| `editor1` | Author | `secrets/wp_user_password.txt` |
+
+Show a password with `cat secrets/wp_admin_password.txt`. The certificate is self-signed, so the browser warns once; accept it to continue. These files are never committed, so keep a private copy.
+
+## Check that the services are running
+
+```sh
+docker ps --format '{{.Names}}: {{.Status}}'
+curl -kI https://nikhtib.42.fr
+```
+
+All containers must show `Up` and the `curl` must answer `HTTP/1.1 200 OK`. After `make bonus` there are seven containers, and these also answer `200`:
+
+```sh
+curl -kI https://nikhtib.42.fr/adminer/
+curl -ks https://nikhtib.42.fr/site/ | head -3
+```
+
+Wait about a minute after starting: WordPress installs itself on the first start, and a 403 or 502 during that time is normal. If a container is not `Up`, read its logs with `docker logs <name>`.

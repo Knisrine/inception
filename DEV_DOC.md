@@ -57,3 +57,26 @@ docker volume inspect backup_data
 ```
 
 To remove volumes, use `make clean`. To remove their host data too, use `make fclean`.
+
+## Managing containers and volumes
+
+```sh
+docker ps --format '{{.Names}}: {{.Status}}'          # running containers
+docker logs -f wordpress                              # follow a service's logs (Ctrl+C to leave)
+docker exec -it mariadb bash                          # shell inside a container
+docker exec wordpress wp user list --allow-root       # WordPress CLI
+docker restart nginx                                  # restart one service
+docker volume ls                                      # srcs_mariadb_data, srcs_wordpress_data, srcs_backup_data
+docker volume inspect srcs_mariadb_data               # shows the host folder behind a volume
+docker network ls                                     # the srcs_inception network
+```
+
+## Where the data is stored
+
+| Data | Host folder |
+|---|---|
+| MariaDB database | `/home/nikhtib/data/mariadb` |
+| WordPress files (core, uploads, `wp-config.php`) | `/home/nikhtib/data/wordpress` |
+| Database backups (bonus) | `/home/nikhtib/data/backups` |
+
+The volumes are named Docker volumes declared with the `local` driver and bind options, so the data lives in these folders. It survives `make down`, `make clean` and a reboot, and is deleted only by `make fclean` and `make re`.
