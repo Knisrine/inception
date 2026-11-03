@@ -14,7 +14,7 @@ up:
 
 bonus:
 	@test -f srcs/.env || (echo "Missing srcs/.env" >&2; exit 1)
-	@for secret in db_password db_root_password wp_admin_password wp_user_password; do \
+	@for secret in db_password db_root_password wp_admin_password wp_user_password ftp_password; do \
 		test -s "secrets/$$secret.txt" || (echo "Missing or empty secrets/$$secret.txt" >&2; exit 1); \
 	done
 	mkdir -p $(DATA)/mariadb $(DATA)/wordpress $(DATA)/backups

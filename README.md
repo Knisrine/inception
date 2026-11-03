@@ -7,9 +7,9 @@
 Inception is a Docker Compose infrastructure that runs a WordPress website behind an NGINX TLS reverse proxy, inside a Debian virtual machine. Every service runs in its own container, built from our own Dockerfiles on `debian:bookworm`.
 
 - **Mandatory stack** (`make`): NGINX, WordPress with PHP-FPM, and MariaDB.
-- **Bonus stack** (`make bonus`): the mandatory stack plus Redis (WordPress object cache), Adminer (database web interface), a static showcase site, and scheduled database backups.
+- **Bonus stack** (`make bonus`): the mandatory stack plus Redis (WordPress object cache), Adminer (database web interface), a static showcase site, scheduled database backups, and an FTP server (vsftpd) pointing to the WordPress volume.
 
-NGINX is the only published entry point, on port 443, and accepts only TLSv1.2 and TLSv1.3.
+In the mandatory stack, NGINX is the only published entry point, on port 443, and accepts only TLSv1.2 and TLSv1.3. The bonus FTP server also publishes port 21 and the passive range 21100-21110.
 
 ## Instructions
 
@@ -18,13 +18,13 @@ NGINX is the only published entry point, on port 443, and accepts only TLSv1.2 a
 - A Debian virtual machine with `make`, Docker Engine and the Docker Compose plugin.
 - The domain `nikhtib.42.fr` mapped to the machine in `/etc/hosts`: `127.0.0.1 nikhtib.42.fr` (inside the VM).
 - A data directory owned by your user: `mkdir -p /home/nikhtib/data`.
-- `srcs/.env` (tracked, non-secret settings only) and the password files in `secrets/` (never committed).
+- `srcs/.env` (tracked, non-secret settings only) and the password files in `secrets/` (never committed). `secrets/ftp_password.txt` is needed only for `make bonus`.
 
 Create the secrets once on a fresh clone:
 
 ```sh
 mkdir -p secrets && chmod 700 secrets
-for f in db_password db_root_password wp_admin_password wp_user_password; do
+for f in db_password db_root_password wp_admin_password wp_user_password ftp_password; do
   openssl rand -base64 18 | tr -d '/+=\n' > "secrets/$f.txt"
 done
 chmod 600 secrets/*.txt
@@ -47,6 +47,18 @@ The first start takes a few minutes while WordPress installs itself.
 
 The WordPress site is available at `https://nikhtib.42.fr/`. After `make bonus`, Adminer is available at `https://nikhtib.42.fr/adminer/` and the static site at `https://nikhtib.42.fr/site/`. The certificate is self-signed, so the browser shows a warning that must be accepted. The WordPress administrator is `nikhtib`, with the password from `secrets/wp_admin_password.txt`.
 
+### FTP (bonus)
+
+After `make bonus`, an FTP server gives access to the WordPress files (`/home/nikhtib/data/wordpress`). Log in as `ftpuser` (`FTP_USER` in `srcs/.env`), with the password from `secrets/ftp_password.txt`:
+
+```sh
+curl --user ftpuser:"$(cat secrets/ftp_password.txt)" ftp://nikhtib.42.fr/                  # list the site root
+curl --user ftpuser:"$(cat secrets/ftp_password.txt)" -T file.txt ftp://nikhtib.42.fr/       # upload a file
+curl --user ftpuser:"$(cat secrets/ftp_password.txt)" ftp://nikhtib.42.fr/wp-config.php -o - # download a file
+```
+
+Any FTP client (FileZilla, `lftp`, `ftp`) works as well, in passive mode on port 21. Anonymous login is disabled, and the user is locked (chroot) inside the WordPress directory.
+
 ## Project description
 
 ### Use of Docker and sources included
@@ -55,9 +67,9 @@ Docker runs each service as an isolated container, and Docker Compose describes 
 
 - `Makefile`: builds and starts the stacks.
 - `srcs/docker-compose.yml`: NGINX, WordPress, MariaDB, the `inception` network, the two data volumes and the secrets.
-- `srcs/docker-compose.bonus.yml`: Redis, Adminer, the static site and the backup service.
+- `srcs/docker-compose.bonus.yml`: Redis, Adminer, the static site, the backup service and the FTP server.
 - `srcs/requirements/<service>/`: one Dockerfile per service, with its configuration in `conf/` and its startup script in `tools/`.
-- `srcs/.env`: non-secret settings (domain, database name, user names, emails, data path).
+- `srcs/.env`: non-secret settings (domain, database name, user names, emails, data path, FTP user).
 - `secrets/`: password files, ignored by git and created locally.
 
 ### Main design choices
@@ -68,6 +80,7 @@ Docker runs each service as an isolated container, and Docker Compose describes 
 - NGINX resolves the WordPress, Adminer and static-site hosts per request, so the mandatory stack starts without the bonus containers and survives containers being recreated.
 - All containers restart automatically (`restart: always`).
 - Bonus service of our choice: scheduled MariaDB backups. All site data lives in two folders, so a dump every 30 minutes (the last five kept) protects it from a bad rebuild or a corrupted volume, and it can be restored with one command.
+- FTP server: vsftpd runs in the foreground as PID 1 and mounts the same `wordpress_data` volume as WordPress, read-write, at `/var/www/html`. The FTP user is created at startup with the UID and GID of `www-data`, so files uploaded over FTP and files written by WordPress have the same owner and stay editable from both sides. Its password comes from the `ftp_password` Docker secret. Passive mode uses the fixed port range 21100-21110, which is published alongside port 21.
 
 ### Virtual machines vs Docker
 

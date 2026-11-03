@@ -13,6 +13,7 @@ secrets/db_password.txt
 secrets/db_root_password.txt
 secrets/wp_admin_password.txt
 secrets/wp_user_password.txt
+secrets/ftp_password.txt      # bonus only
 ```
 
 Each file should contain only its password. Do not commit these files.
@@ -26,7 +27,7 @@ make
 make bonus
 ```
 
-`make` builds the mandatory stack from `srcs/docker-compose.yml`. `make bonus` layers `srcs/docker-compose.bonus.yml` on top and adds Redis, Adminer, the static site, and backups. Both targets create the persistent data directories before launching Compose.
+`make` builds the mandatory stack from `srcs/docker-compose.yml`. `make bonus` layers `srcs/docker-compose.bonus.yml` on top and adds Redis, Adminer, the static site, backups, and the FTP server. Both targets create the persistent data directories before launching Compose.
 
 Useful lifecycle commands:
 
@@ -45,7 +46,7 @@ docker compose -f srcs/docker-compose.yml logs -f SERVICE_NAME
 
 ## Containers and volumes
 
-The Compose project defines the `inception` network and one container per service. The required persistent volumes are `mariadb_data` and `wordpress_data`; the backup service uses `backup_data`. Their host data is configured under `/home/nikhtib/data` through `srcs/.env`.
+The Compose project defines the `inception` network and one container per service. The required persistent volumes are `mariadb_data` and `wordpress_data`; the backup service uses `backup_data`, and the FTP server mounts `wordpress_data` read-write. Their host data is configured under `/home/nikhtib/data` through `srcs/.env`.
 
 To inspect volumes:
 

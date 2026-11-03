@@ -9,8 +9,9 @@
 - Adminer provides a browser database administration panel.
 - The static container serves the project showcase site.
 - The backup container creates compressed MariaDB backups every 30 minutes.
+- The FTP container (vsftpd) gives FTP access to the WordPress files.
 
-The first three services are mandatory. Redis, Adminer, the static site, and backups are bonus services started with `make bonus`.
+The first three services are mandatory. Redis, Adminer, the static site, backups, and FTP are bonus services started with `make bonus`.
 
 ## Start and stop
 
@@ -30,6 +31,7 @@ make bonus-down
 - WordPress: `https://nikhtib.42.fr/`
 - Adminer: `https://nikhtib.42.fr/adminer/`
 - Static site: `https://nikhtib.42.fr/site/`
+- FTP: `ftp://nikhtib.42.fr` (port 21), user `ftpuser`, password in `secrets/ftp_password.txt`
 
 Because the project uses a self-signed certificate, the browser may show a certificate warning during local use.
 
@@ -66,11 +68,17 @@ docker ps --format '{{.Names}}: {{.Status}}'
 curl -kI https://nikhtib.42.fr
 ```
 
-All containers must show `Up` and the `curl` must answer `HTTP/1.1 200 OK`. After `make bonus` there are seven containers, and these also answer `200`:
+All containers must show `Up` and the `curl` must answer `HTTP/1.1 200 OK`. After `make bonus` there are eight containers, and these also answer `200`:
 
 ```sh
 curl -kI https://nikhtib.42.fr/adminer/
 curl -ks https://nikhtib.42.fr/site/ | head -3
+```
+
+The FTP server must list the WordPress files:
+
+```sh
+curl --user ftpuser:"$(cat secrets/ftp_password.txt)" ftp://nikhtib.42.fr/
 ```
 
 Wait about a minute after starting: WordPress installs itself on the first start, and a 403 or 502 during that time is normal. If a container is not `Up`, read its logs with `docker logs <name>`.
